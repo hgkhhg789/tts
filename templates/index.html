@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Storage</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body class="bg-light">
+    <div class="container mt-5">
+        <div class="card shadow-lg p-4 bg-white rounded">
+            <h2 class="text-center text-primary">🎤 Audio TTS Storage</h2>
+            <form id="myForm">
+                <div class="mb-3">  
+                    <label for="textInput" class="form-label fw-bold">Nhập văn bản:</label>
+                    <textarea id="textInput" name="text" class="form-control" rows="3" placeholder="Nhập văn bản tại đây..."></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="voice-select" class="form-label fw-bold">Chọn giọng nói:</label>
+                    <select name="voice" id="voice-select" class="form-select">
+                        <option value="vi-VN-HoaiMyNeural">Hoài My (Nữ)</option>
+                        <option value="vi-VN-NamMinhNeural">Nam Minh (Nam)</option>
+                    </select>
+                </div>
+
+                <div class="d-flex justify-content-center gap-3">
+                    <button type="submit" name="storageType" value="short" class="btn btn-primary" id="shortStorageBtn">Short Storage</button>
+                    <button type="submit" name="storageType" value="long" class="btn btn-success" id="longStorageBtn">Long Storage</button>
+                </div>
+            </form>
+
+            <!-- Loading Spinner -->
+            <div id="loadingSpinner" class="text-center mt-3" style="display: none;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Đang xử lý...</p>
+            </div>
+
+            <div id="audioContainer" class="mt-4 text-center" style="display: none;">
+                <audio id="audioPlayer" controls class="w-100"></audio>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const myForm = document.getElementById('myForm');
+        const audioContainer = document.getElementById('audioContainer');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const shortStorageBtn = document.getElementById('shortStorageBtn');
+        const longStorageBtn = document.getElementById('longStorageBtn');
+
+        myForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            // Show the loading spinner
+            loadingSpinner.style.display = 'block';
+            audioContainer.style.display = 'none'; // Hide audio container
+
+            // Disable the buttons
+            shortStorageBtn.disabled = true;
+            longStorageBtn.disabled = true;
+
+            const formData = new FormData(this);
+            const storageType = e.submitter.value;
+            const apiEndpoint = storageType === 'long' ? '/api/long' : '/api/short';
+
+            fetch(apiEndpoint, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.audioUrl) {
+                    audioPlayer.src = data.audioUrl;
+                    audioContainer.style.display = 'block'; 
+                    audioPlayer.load(); 
+                    audioPlayer.addEventListener('loadeddata', () => {
+                        audioPlayer.play();
+                    });
+                } else {
+                    alert("Không nhận được URL âm thanh từ server.");
+                    audioContainer.style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error('Lỗi:', error);
+                alert("Có lỗi xảy ra khi xử lý.");
+                audioContainer.style.display = 'none';
+            })
+            .finally(() => {
+                // Hide the loading spinner and re-enable the buttons
+                loadingSpinner.style.display = 'none';
+                shortStorageBtn.disabled = false;
+                longStorageBtn.disabled = false;
+            });
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
